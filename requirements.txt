@@ -1,0 +1,8 @@
+langgraph>=1.2
+langchain-core>=1.7
+langchain-ollama>=1.1
+httpx>=0.28
+beautifulsoup4>=4.12
+markdownify>=0.13
+ruff>=0.5
+pytest>=8
