@@ -65,20 +65,17 @@ class WorkerResult:
 
 
 def extract_json(text: str, required_keys: Sequence[str]) -> dict[str, Any] | None:
-    """Return the first JSON object in ``text`` that contains one of ``required_keys``.
-
-    Models often wrap JSON in prose or code fences, so this scans for braces and decodes
-    from each one instead of requiring the whole reply to be valid JSON.
-    """
+    """Return the first JSON object in ``text`` that contains one of ``required_keys``."""
     decoder = json.JSONDecoder()
     for match in re.finditer(r"\{", text):
         try:
-            obj, _ = decoder.raw_decode(text[match.start() :])
+            obj, _ = decoder.raw_decode(text[match.start():])
         except json.JSONDecodeError:
             continue
         if isinstance(obj, dict) and any(key in obj for key in required_keys):
             return obj
     return None
+
 
 
 def run_worker(
@@ -110,6 +107,7 @@ def run_worker(
             continue
         if "final" in action:
             return WorkerResult(ok=True, output=str(action["final"]), steps=steps)
+
 
         name = str(action.get("tool", ""))
         args = action.get("args", {})
