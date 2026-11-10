@@ -9,6 +9,10 @@ Protocol
        {"type": "chat", "request": "...", "model": "..."}
        {"type": "persist"}   (stub until Phase E)
   3. A chat reply sends plan/worker/judge events, then chunk messages, answer_done, chat_done.
+
+Environment
+  KAGENT_TOKEN  required; the shared secret
+  KAGENT_LLM    "fake" (scripted FakeLLM, no Ollama) or "ollama" (default, needs OLLAMA_HOST)
 """
 
 from __future__ import annotations
@@ -27,7 +31,7 @@ FAKE_ANSWER = "Fake answer: the pipeline ran end to end."
 
 
 async def fake_chat(request: str, model: str, emit: Emit) -> str:
-    """Stands in for the Phase A graph. Sends the same event shapes the real graph will."""
+    """Canned events, used only by the Phase B unit tests."""
     await emit({"type": "plan", "subtasks": [{"role": "executor", "task": "Compute the requested result"}]})
     await emit({"type": "worker", "role": "executor", "result": "fake worker result"})
     await emit({"type": "judge", "ok": True, "feedback": ""})
@@ -47,7 +51,12 @@ async def _chat(ws: WebSocket, msg: dict, chat_fn: ChatFn, models: list[str]) ->
     async def emit(event: dict) -> None:
         await ws.send_json(event)
 
-    answer = await chat_fn(request, model, emit)
+    try:
+        answer = await chat_fn(request, model, emit)
+    except Exception as exc:
+        await ws.send_json({"type": "error", "message": f"agent failed: {exc}"})
+        return
+
     for i in range(0, len(answer), CHUNK_SIZE):
         await ws.send_json({"type": "chunk", "text": answer[i : i + CHUNK_SIZE]})
     await ws.send_json({"type": "answer_done", "text": answer})
@@ -110,7 +119,28 @@ def create_app(chat_fn: ChatFn, models: list[str], skills: list[str], token: str
 
 def make_app() -> FastAPI:
     """Entry point: uvicorn core.server:make_app --factory"""
+    from core.config import get_settings
+    from core.graph_chat import make_graph_chat
+    from core.mcp_loader import load_skills_from_dir
+    from core.superagent import build_graph
+
     token = os.environ.get("KAGENT_TOKEN") or None
-    if os.environ.get("KAGENT_LLM") == "fake":
-        return create_app(fake_chat, ["fake"], [], token)
-    raise RuntimeError("Only KAGENT_LLM=fake works so far. The real graph is connected in the next step.")
+    mode = os.environ.get("KAGENT_LLM", "ollama")
+    settings = get_settings()
+
+    if mode == "fake":
+        from core.fake_llm import FakeLLM
+
+        llm = FakeLLM()
+        models = ["fake"]
+    elif mode == "ollama":
+        from core.llm import OllamaEngine
+
+        llm = OllamaEngine()
+        models = list(settings.allowed_models)
+    else:
+        raise RuntimeError(f"KAGENT_LLM must be 'fake' or 'ollama', got {mode!r}")
+
+    registry = load_skills_from_dir(settings.skills_dir)
+    graph = build_graph(llm, registry, settings)
+    return create_app(make_graph_chat(graph), models, registry.names(), token)
