@@ -1,10 +1,11 @@
-# Context docs
+﻿# Context index
 
-Read these in order when starting a new session:
+Read these in order at the start of any new session:
 
-1. `HANDOFF.md`: current state, what is done, what is next, and the rules of work.
-2. `RUNBOOK.md`: exact commands to run, test, and start the server.
-3. `ARCHITECTURE.md`: components, WebSocket protocol, and configuration.
-4. `DECISIONS.md`: choices already made and why. Do not reopen them without a reason.
+1. HANDOFF.md: current state, next steps, working rules, and how to resume.
+2. ARCHITECTURE.md: components and the exact WebSocket wire protocol.
+3. DECISIONS.md: decisions already made. Do not reopen them without a reason.
+4. RUNBOOK.md: exact commands to run, test, and verify.
 
-Keep these files current. Update them at the end of every session.
+Repo: https://github.com/NayanNakhwa/KaggleAgent-Hybrid
+Default branch on GitHub: master. Active work branch: phase-b-cli.

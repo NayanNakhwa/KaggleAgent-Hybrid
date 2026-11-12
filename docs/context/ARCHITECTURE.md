@@ -1,44 +1,53 @@
-# Architecture
+﻿# Architecture
 
 ## Components
-- `core/config.py`: `Settings` and `get_settings()`. Reads environment variables. Defaults: workspace `workspace/`, skills `workspace/mcp_skills/`, Ollama `http://127.0.0.1:11434`, default model `qwen2.5-coder:7b`, allowed models `qwen2.5-coder:7b`, `deepseek-coder:6.7b`, `llama3.1:8b`, max rounds 2, max subtasks 4, max worker steps 6.
-- `core/llm.py`: `OllamaEngine` with `complete` and `stream`.
-- `core/fake_llm.py`: deterministic fake LLM for tests and fake mode.
-- `core/mcp_loader.py`: skill registry. Loads every `*.py` in `workspace/mcp_skills/` except names starting with `_`. Each skill defines `SKILL_NAME`, `DESCRIPTION`, `PARAMETERS`, and `run(**kwargs) -> str`. Broken skills are skipped. Output is capped at 20,000 characters.
-- `core/superagent.py`: the LangGraph-style pipeline. `stream_events(graph, request, model)` is synchronous. Nodes: plan, worker fan-out, judge, retry, synthesize.
-- `core/graph_chat.py`: runs `stream_events` in a thread and forwards each event to the async WebSocket side. Final `answer` events are held and sent as chunks.
-- `core/server.py`: FastAPI WebSocket at `/ws`. `make_app()` is the factory. `KAGENT_LLM=fake` uses the fake LLM. `KAGENT_LLM=ollama` uses `OllamaEngine`.
-- `scripts/smoke_ws.py`: manual smoke test. Reads `KAGENT_URL` (default `ws://127.0.0.1:8000/ws`) and `KAGENT_TOKEN`.
+| Path | Role |
+|---|---|
+| core/superagent.py | LangGraph superagent: plan, worker fan-out, judge, retry, synthesize. |
+| core/workers.py | Worker execution, role gate, step budget. |
+| core/mcp_loader.py | Loads skills from workspace/mcp_skills/. Skips the template and bad files. |
+| core/config.py | Settings from environment variables. |
+| core/llm.py | Ollama client (OllamaEngine). |
+| core/fake_llm.py | Scripted FakeLLM for offline tests and fake mode. |
+| core/graph_chat.py | Runs the graph in a thread and forwards events to the WebSocket. |
+| core/server.py | FastAPI WebSocket server at /ws with token auth. |
+| client/protocol.py | Pure wire helpers and TurnState. No I/O. |
+| client/cli.py | Rich terminal client, synchronous websockets. |
+| scripts/smoke_ws.py | End-to-end WebSocket smoke test. |
+| tests/ | pytest suite. test_cli.py uses a scripted fake socket. |
 
-## WebSocket protocol (as of Phase B)
-The first message must be auth. The server compares the token with `hmac.compare_digest` against `KAGENT_TOKEN`. If the server has no token set, it refuses every client.
-
-Client to server:
-| type | fields | notes |
+## Environment variables
+| Name | Default | Notes |
 |---|---|---|
-| `auth` | `token` | must be the first message |
-| `models` | none | returns the model list |
-| `skills` | none | returns the skill names |
-| `chat` | `request`, `model` | starts a run |
-| `persist` | not yet defined | stub until Phase E |
+| KAGENT_TOKEN | none | Required. Server refuses everyone if unset. Client reads it from env only. |
+| KAGENT_LLM | ollama | fake or ollama. Any other value raises RuntimeError. |
+| KAGENT_URL | ws://127.0.0.1:8000/ws | Used by the client and smoke test. |
 
-Server to client, as observed in the smoke test:
-| type | fields | notes |
-|---|---|---|
-| `auth_ok` | none | |
-| `models` | `models` (list) | fake mode returns `['fake']` |
-| `skills` | `skills` (list) | |
-| `plan` | `subtasks` (list of `role`, `task`) | |
-| `worker` | `id`, `role`, `ok` | output text not included |
-| `judge` | `id`, `accepted` | |
-| `chunk` | `text` | answer text in pieces |
-| `answer_done` | `text` | full answer |
-| `chat_done` | none | run finished |
+## WebSocket protocol (confirmed from a live dump, fake mode)
+Every message is a JSON object with a string "type". All messages are flat, with no nested "data" wrapper.
 
-Error message types are not confirmed. Check `core/server.py` before the CLI relies on them.
+Auth (first message required):
+- Client sends: {"type":"auth","token":"..."}
+- Success: {"type":"auth_ok"}
+- Failure: {"type":"error","message":"auth failed"}, then close with code 1008.
 
-## Planned: Rich CLI client (`client/`)
-See `DECISIONS.md` for the chosen design.
+Models and skills:
+- Client sends: {"type":"models"} returns {"type":"models","models":["fake"]}
+- Client sends: {"type":"skills"} returns {"type":"skills","skills":["bash_terminal","file_editor","file_explorer","linter","python_repl","web_docs"]}
 
-## Planned deployment
-Laptop runs the UI and server. Kaggle runs Ollama on a GPU. A tunnel connects them. Real token lives only in Kaggle Secrets. Tunnel details are chosen in Phase D.
+Chat:
+- Client sends: {"type":"chat","request":"...","model":"fake"}
+- Server sends, in order:
+  - {"type":"plan","subtasks":[{"role":"executor","task":"..."}]}
+  - {"type":"worker","id":"r1-0","role":"executor","ok":true}
+  - {"type":"judge","id":"r1-0","accepted":true}
+  - {"type":"chunk","text":"..."} (40 characters per chunk)
+  - {"type":"answer_done","text":"full answer"}
+  - {"type":"chat_done"}
+- Errors (bad JSON, unknown type, unknown model, agent failure): {"type":"error","message":"..."}
+
+Persist: {"type":"persist"} returns a pending stub until Phase E.
+
+## Graph flow
+plan -> fan-out to workers -> judge each result -> retry failed rounds up to a limit -> synthesize -> answer.
+Unresolved items are marked when rounds run out.

@@ -1,40 +1,42 @@
-# Decisions
+﻿# Decisions log
 
-Each decision is final unless new information requires a change. Record any change here with the date.
+Each entry: decision, reason, status. Do not reopen without a reason.
 
-## D1. Git branches
-- Work on feature branches. Phase B is on `phase-b`. Docs and the CLI are on `phase-b-cli`.
-- GitHub's default branch is `master`, which the user calls "main". Merge to `master` through a pull request once a phase is verified.
-- Date: 2026-11-12.
+1. Laptop hosts the UI and server. Ollama runs on Kaggle and connects through a tunnel.
+   Reason: the GPU is remote, and the UI should stay local. Status: active.
 
-## D2. CLI scope (first version)
-- Chat with live events: plan, worker, judge, streamed answer, and done.
-- Commands: `/models` and `/skills`, which call the server's `models` and `skills` messages.
-- Commands: `/quit` to exit.
-- Not included: `persist` (stub until Phase E), and interrupts (need server cancellation first).
-- Reason: this covers everything the server can do now, and avoids features the server cannot back yet.
+2. Fake LLM mode for development. KAGENT_LLM=fake for tests and local work. Default is ollama.
+   Reason: development without Kaggle or GPU time. Status: active.
 
-## D3. CLI libraries
-- Use `rich` for rendering and `websockets` (sync client, same as `scripts/smoke_ws.py`) for the connection.
-- Add both to `requirements.txt` with versions matching what is installed in `.venv`. Check the installed versions with `pip show rich websockets` before pinning.
-- Reason: `websockets` is already in use, and `rich` is the standard terminal rendering library for Python.
+3. Token comes from the environment only. Real tokens go only in Kaggle Secrets.
+   Reason: keeps secrets out of the repo and chat. Status: active.
 
-## D4. CLI configuration
-- Read `KAGENT_URL` (default `ws://127.0.0.1:8000/ws`) and `KAGENT_TOKEN` from the environment.
-- Never accept a token as a command-line argument, because it would stay in shell history.
-- Model: default to the first model returned by the server. Override with `--model`.
+4. Local dev token is local-dev-test, used only in fake mode on localhost.
+   Reason: a placeholder that is safe to show. Status: active.
 
-## D5. CLI file layout
-- `client/__init__.py`
-- `client/protocol.py`: message builders and event formatting. No network code, so it is easy to test.
-- `client/cli.py`: `main()`, the input loop, and the Rich rendering.
-- `tests/test_cli.py`: tests for `protocol.py`, and one test that runs the CLI against the real server in fake mode.
+5. Auth is the first WebSocket message, compared with hmac.compare_digest. Failure closes with 1008.
+   Reason: constant-time compare and a clear close code. Status: verified.
 
-## D6. Process
-- Full files only, not partial snippets.
-- Tests are written first for each new piece, then the code.
-- The user runs the tests and reports results. Say "untested" until the user confirms.
+6. CLI uses synchronous websockets and Rich.
+   Reason: simple blocking loop for a terminal; Rich for tables and panels. Status: verified.
 
-## D7. Secrets
-- Local dev token: `local-dev-test`, fake mode, localhost only.
-- Real token: Kaggle Secrets only. Never in code, docs, or chat.
+7. client/protocol.py holds pure logic, with no I/O. Tests use a scripted fake socket.
+   Reason: tests need no server and run fast. Status: verified.
+
+8. Default model is the first model the server reports. --model overrides it.
+   Reason: no user choice needed for normal use. Status: verified.
+
+9. Chat answers are sent as chunks after synthesis, not as live tokens.
+   Reason: simplest correct path for Phase B. Live tokens are planned for Phase D. Status: active.
+
+10. Work goes on branches. master stays clean until a pull request merges.
+    Reason: safe progress and easy rollback. Status: active. Current branch: phase-b-cli.
+
+11. The assistant does not push, delete, or merge without the user's confirmation.
+    Reason: destructive actions need the user's approval. Status: active.
+
+12. Every claim of working code is marked untested until the user confirms it.
+    Reason: the assistant cannot run the user's machine or Kaggle. Status: active.
+
+13. The user does not want option menus. The assistant picks the best option, states it in one line, and proceeds.
+    Reason: faster progress. Status: active.
