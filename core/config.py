@@ -43,6 +43,8 @@ class Settings:
     max_rounds: int = field(default_factory=lambda: _env_int("KAGENT_MAX_ROUNDS", 2))
     max_subtasks: int = field(default_factory=lambda: _env_int("KAGENT_MAX_SUBTASKS", 4))
     max_worker_steps: int = field(default_factory=lambda: _env_int("KAGENT_MAX_WORKER_STEPS", 6))
+    # Seconds to sleep in each FakeLLM call. 0 in production and tests; set to 2-3 for Ctrl+C testing.
+    fake_delay: int = field(default_factory=lambda: _env_int("KAGENT_FAKE_DELAY", 0))
 
 
 def get_settings() -> Settings:

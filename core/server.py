@@ -53,6 +53,10 @@ async def _chat(ws: WebSocket, msg: dict, chat_fn: ChatFn, models: list[str]) ->
 
     try:
         answer = await chat_fn(request, model, emit)
+    except WebSocketDisconnect:
+        # The client closed the connection during the turn. There is nobody to send to,
+        # so stop quietly instead of trying to send an error on a closed socket.
+        return
     except Exception as exc:
         await ws.send_json({"type": "error", "message": f"agent failed: {exc}"})
         return
