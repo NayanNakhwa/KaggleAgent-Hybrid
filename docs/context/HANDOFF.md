@@ -12,9 +12,9 @@ KaggleAgent-Hybrid is a hybrid agent system. The UI and server run on the user's
 ## Branches
 | Branch | Commit | Status |
 |---|---|---|
-| master | 19b8bea | Phase A complete. Not touched since. Default branch on GitHub. |
+| master | 19b8bea | Phase A complete. Default branch on GitHub. Changes only through the final pull request. |
 | phase-b | f1e5bc5 | Phase B server. Verified by user. On origin. |
-| phase-b-cli | 692774b on origin; gap fixes committed locally, push pending | Current work branch. Rich CLI verified in fake mode. |
+| phase-b-cli | 7e64ce8 | Current work branch. Pushed to origin. Holds the latest project files. |
 
 Work lives on phase-b-cli until a pull request merges it into master.
 
@@ -27,23 +27,27 @@ Work lives on phase-b-cli until a pull request merges it into master.
 - Wrong token: refused with "auth failed". The token is not printed.
 - CLI tests: pass, using a scripted fake socket.
 
+## Done, committed and pushed, not yet verified on the laptop
+- Auth error text fixed in client/cli.py (no more "auth failed: auth failed").
+- Ctrl+C during a chat turn is caught. The CLI prints a message and closes the connection. Needs a manual check (see NEXT_SESSION.md).
+
 ## Not yet done or untested
 - Ollama mode (KAGENT_LLM=ollama): untested.
 - Real token: not set up. It belongs only in Kaggle Secrets, never in the repo or chat.
 - Kaggle notebook, tunnel, and handshake: not started (Phase D).
 - Persist: returns a stub until Phase E.
-- Interrupts: not implemented. Ctrl+C during a chat turn closes the CLI connection (fix committed, untested on the laptop).
+- Interrupts to the server: not implemented.
 
 ## Known gaps and small bugs
-1. FIXED (committed, not yet pushed): doubled "authentication failed: auth failed" message. The CLI now shows only the server's message.
-2. FIXED (committed, not yet pushed): Ctrl+C during a chat turn is now caught. The CLI prints a message and closes the connection. Needs a manual check on the laptop.
+1. FIXED and pushed: doubled "auth failed" message.
+2. FIXED and pushed, untested on laptop: Ctrl+C during a chat turn.
 3. Chat answers are sent as 40-character chunks after synthesis finishes, not as live tokens. Live tokens come in Phase D.
 4. Worker events do not include the worker output text, so the CLI cannot show it.
 5. If a client disconnects mid-run, the worker thread keeps running until the graph finishes. Add cancellation before the CLI sends interrupts.
-6. Server auth failure is {"type":"error","message":"auth failed"} followed by close code 1008. This is documented in ARCHITECTURE.md.
+6. Server auth failure is {"type":"error","message":"auth failed"} followed by close code 1008. Documented in ARCHITECTURE.md.
 
 ## Next steps (in order)
-1. Push the phase-b-cli fix commit (after user confirms).
+1. Manual check of Ctrl+C and the auth message on the laptop (fake mode).
 2. Phase C: Streamlit web UI. It reuses client/protocol.py and the same server.
 3. Phase D: Kaggle notebook running Ollama, tunnel, handshake, and live token streaming. Server change needed for gap 3.
 4. Phase E: persist generated skills to a branch, README, final polish, then a pull request from phase-b-cli into master.
@@ -54,7 +58,7 @@ Work lives on phase-b-cli until a pull request merges it into master.
 - Every PowerShell command block must say:
   - which window to use: the current one, or a new one;
   - whether .venv must be active (prompt starts with (.venv));
-  - the folder to run from (the repo root: D:\Projects\Kaggle Projects\Projects\KaggleAgent-Hybrid).
+  - the folder to run from (the repo root).
 - Use one code block per set of commands, in the order to run them. The user pastes the full output after each step.
 - The assistant cannot run Kaggle, Ollama, or the user's laptop. Verification is the user's runs.
 - Say "untested" until the user confirms a result.
@@ -65,9 +69,4 @@ Work lives on phase-b-cli until a pull request merges it into master.
 - Keep each reply small enough to finish. Do not cut off code.
 
 ## How to resume in a new chat
-1. In PowerShell, from the repo root:
-   git pull
-   git archive --format=zip --output="$env:USERPROFILE\Desktop\kagent-snapshot.zip" HEAD
-2. Upload kagent-snapshot.zip to the new chat.
-3. Paste this HANDOFF.md, or say "read docs/context in the zip".
-4. Paste the output of the last step you ran.
+See docs/context/NEXT_SESSION.md.
