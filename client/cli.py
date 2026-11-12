@@ -24,6 +24,9 @@ from client.protocol import ProtocolError, TurnState
 
 DEFAULT_URL = "ws://127.0.0.1:8000/ws"
 HELP_TEXT = "Type a request and press Enter. Commands: /models, /skills, /help, /quit"
+INTERRUPT_TEXT = (
+    "interrupted. Closing the connection; the server may still finish the current turn."
+)
 
 
 class ClientError(Exception):
@@ -46,7 +49,7 @@ class Session:
         if reply["type"] == "auth_ok":
             return
         if reply["type"] == "error":
-            raise ClientError(f"authentication failed: {reply.get('message', 'unknown reason')}")
+            raise ClientError(str(reply.get("message", "authentication failed")))
         raise ClientError(f"unexpected reply to auth: {reply['type']}")
 
     def _request_list(self, kind: str) -> list[str]:
@@ -144,6 +147,11 @@ def run_repl(session: Session, console: Console, model: str) -> None:
                 session.chat(line, model)
         except ClientError as exc:
             console.print(f"[red]{escape(str(exc))}[/]")
+        except KeyboardInterrupt:
+            # Ctrl+C while waiting on the server. The socket state is unknown,
+            # so leave the REPL and let main() close the connection.
+            console.print(f"\n[yellow]{INTERRUPT_TEXT}[/]")
+            return
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:

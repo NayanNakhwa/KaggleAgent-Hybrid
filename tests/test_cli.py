@@ -7,7 +7,7 @@ import pytest
 from rich.console import Console
 
 from client import protocol
-from client.cli import ClientError, Session, pick_model
+from client.cli import ClientError, Session, pick_model, run_repl
 from client.protocol import ProtocolError, TurnState
 
 
@@ -79,11 +79,24 @@ def test_authenticate_ok_sends_token():
     assert ws.sent == [{"type": "auth", "token": "local-dev-test"}]
 
 
-def test_authenticate_rejected_does_not_echo_token():
+def test_authenticate_rejected_shows_only_server_message():
     ws = FakeWS([dumps({"type": "error", "message": "auth failed"})])
-    with pytest.raises(ClientError, match="auth failed") as info:
+    with pytest.raises(ClientError) as info:
         Session(ws, make_console()).authenticate("secret-value")
+    assert str(info.value) == "auth failed"
     assert "secret-value" not in str(info.value)
+
+
+class InterruptedSession:
+    def chat(self, request, model):
+        raise KeyboardInterrupt
+
+
+def test_ctrl_c_during_chat_leaves_repl_cleanly(monkeypatch):
+    console = make_console()
+    monkeypatch.setattr(console, "input", lambda *args, **kwargs: "hello")
+    run_repl(InterruptedSession(), console, "fake")
+    assert "interrupted" in console.file.getvalue()
 
 
 def test_models_and_skills():
