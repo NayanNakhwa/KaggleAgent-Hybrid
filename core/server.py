@@ -23,6 +23,14 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+try:
+    from starlette.websockets import WebSocketDisconnected
+
+    # Starlette can raise either class when the client has gone away.
+    DISCONNECT_ERRORS = (WebSocketDisconnect, WebSocketDisconnected)
+except ImportError:  # older Starlette versions only have WebSocketDisconnect
+    DISCONNECT_ERRORS = (WebSocketDisconnect,)
+
 Emit = Callable[[dict], Awaitable[None]]
 ChatFn = Callable[[str, str, Emit], Awaitable[str]]
 
@@ -36,6 +44,15 @@ async def fake_chat(request: str, model: str, emit: Emit) -> str:
     await emit({"type": "worker", "role": "executor", "result": "fake worker result"})
     await emit({"type": "judge", "ok": True, "feedback": ""})
     return FAKE_ANSWER
+
+
+async def _send_error(ws: WebSocket, message: str) -> None:
+    """Send an error if the client is still connected. Otherwise do nothing."""
+    try:
+        await ws.send_json({"type": "error", "message": message})
+    except Exception:
+        # The socket is already closed, so there is nobody to tell.
+        return
 
 
 async def _chat(ws: WebSocket, msg: dict, chat_fn: ChatFn, models: list[str]) -> None:
@@ -53,18 +70,15 @@ async def _chat(ws: WebSocket, msg: dict, chat_fn: ChatFn, models: list[str]) ->
 
     try:
         answer = await chat_fn(request, model, emit)
-    except WebSocketDisconnect:
-        # The client closed the connection during the turn. There is nobody to send to,
-        # so stop quietly instead of trying to send an error on a closed socket.
+        for i in range(0, len(answer), CHUNK_SIZE):
+            await ws.send_json({"type": "chunk", "text": answer[i : i + CHUNK_SIZE]})
+        await ws.send_json({"type": "answer_done", "text": answer})
+        await ws.send_json({"type": "chat_done"})
+    except DISCONNECT_ERRORS:
+        # The client closed the connection during the turn. Stop quietly.
         return
     except Exception as exc:
-        await ws.send_json({"type": "error", "message": f"agent failed: {exc}"})
-        return
-
-    for i in range(0, len(answer), CHUNK_SIZE):
-        await ws.send_json({"type": "chunk", "text": answer[i : i + CHUNK_SIZE]})
-    await ws.send_json({"type": "answer_done", "text": answer})
-    await ws.send_json({"type": "chat_done"})
+        await _send_error(ws, f"agent failed: {exc}")
 
 
 async def _handle(ws: WebSocket, msg: object, chat_fn: ChatFn, models: list[str], skills: list[str]) -> None:
@@ -94,7 +108,7 @@ def create_app(chat_fn: ChatFn, models: list[str], skills: list[str], token: str
 
         try:
             first = await ws.receive_json()
-        except WebSocketDisconnect:
+        except DISCONNECT_ERRORS:
             return
         except ValueError:
             first = None
@@ -111,12 +125,15 @@ def create_app(chat_fn: ChatFn, models: list[str], skills: list[str], token: str
         while True:
             try:
                 msg = await ws.receive_json()
-            except WebSocketDisconnect:
+            except DISCONNECT_ERRORS:
                 return
             except ValueError:
-                await ws.send_json({"type": "error", "message": "invalid JSON"})
+                await _send_error(ws, "invalid JSON")
                 continue
-            await _handle(ws, msg, chat_fn, models, skills)
+            try:
+                await _handle(ws, msg, chat_fn, models, skills)
+            except DISCONNECT_ERRORS:
+                return
 
     return app
 
