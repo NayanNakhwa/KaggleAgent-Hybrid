@@ -1,6 +1,6 @@
 # Project scope and plan
 
-Last updated: 2026-11-13
+Last updated: 2026-11-13 (end of session 3)
 
 ## 1. Goal
 
@@ -41,9 +41,11 @@ Phase B runs everything on the laptop in fake mode. No Ollama, no Kaggle, no tun
 | Skills (tools) | `workspace/mcp_skills/*.py` | python_repl, linter, file_explorer, file_editor, bash_terminal, web_docs. |
 | Paths | `core/paths.py` | Safe paths inside the workspace. |
 | CLI client | `client/cli.py`, `client/protocol.py` | Rich terminal client. `protocol.py` holds pure helpers. |
+| UI (Phase C) | `ui/app.py` | Streamlit browser page. Not built yet. |
 | Tests | `tests/` | pytest tests. |
 | Docs | `docs/context/` | Handoff, next-session guide, this file, README index. Also ARCHITECTURE, DECISIONS, RUNBOOK. |
 | Smoke script | `scripts/smoke_ws.py` | Quick WebSocket check. |
+| Handshake (Phase D) | `scripts/check_ollama.py` | Checks the Ollama URL before the server starts. Not built yet. |
 
 ## 4. Protocol (client to server)
 
@@ -58,6 +60,8 @@ First message must be auth: `{"type":"auth","token":"..."}`.
 
 Auth failure: `{"type":"error","message":"auth failed"}`, then close code 1008.
 
+Phase D adds live token messages and worker output text. The exact format is decided in Phase D and documented in ARCHITECTURE.md.
+
 ## 5. Settings (environment variables)
 
 | Name | Default | Meaning |
@@ -65,7 +69,7 @@ Auth failure: `{"type":"error","message":"auth failed"}`, then close code 1008.
 | `KAGENT_TOKEN` | none (refuses everyone) | Shared secret. Same value in server and client windows. Local dev: `local-dev-test`. |
 | `KAGENT_LLM` | `ollama` | `fake` for scripted answers, `ollama` for the real model. |
 | `KAGENT_FAKE_DELAY` | `0` | Seconds to wait in each fake call. Manual Ctrl+C tests only. |
-| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Where Ollama listens. |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Where Ollama listens. Phase D sets it to the tunnel URL. |
 | `KAGENT_DEFAULT_MODEL` | `qwen2.5-coder:7b` | Model used when none is chosen. |
 | `KAGENT_MAX_ROUNDS` | `2` | Plan-work-judge rounds allowed. |
 | `KAGENT_MAX_SUBTASKS` | `4` | Max subtasks from the planner. |
@@ -80,9 +84,9 @@ Allowed models (real mode): `qwen2.5-coder:7b`, `deepseek-coder:6.7b`, `llama3.1
 | Phase | Goal | Status |
 |---|---|---|
 | A | Core agent graph and skills, tested | Complete. On `master`. |
-| B | WebSocket server and Rich CLI, fake mode | Nearly complete. Ctrl+C re-test pending (see HANDOFF.md). |
-| C | Streamlit web UI | Next. |
-| D | Kaggle notebook with Ollama, tunnel, handshake, live tokens | Not started. |
+| B | WebSocket server and Rich CLI, fake mode | Complete (2026-11-13). Ctrl+C and auth checks verified on `ea2db92`. |
+| C | Streamlit web UI | Next. Steps in NEXT_SESSION.md, Part 3. |
+| D | Kaggle notebook with Ollama, tunnel, handshake, live tokens, cancellation | Not started. |
 | E | Persist skills to a branch, README, polish, pull request to `master` | Not started. |
 
 ## 7. Phase C plan (Streamlit UI)
@@ -107,10 +111,11 @@ Goal: the agent uses a real model on Kaggle.
 Design (decided):
 - Kaggle notebook installs Ollama, pulls one allowed model, starts Ollama on localhost.
 - Tunnel: `cloudflared` quick tunnel (no account needed). The notebook prints a public URL. The laptop sets it as `OLLAMA_HOST`.
-- Handshake: the notebook prints its URL and a check value. The laptop checks `/api/tags` before the server starts.
+- Handshake: the laptop checks `/api/tags` before the server starts.
 - Token: the real `KAGENT_TOKEN` lives only in Kaggle Secrets and in the laptop environment. Never in the repo, the docs, or the chat.
-- Server change for gap 3: live tokens instead of 40-character chunks. Needs a streaming call in `core/llm.py` and a small change in `core/server.py`.
-- Gap 5 (cancellation): when a client disconnects, the graph stops at the next step. Needed before interrupts.
+- Server change: live tokens instead of 40-character chunks. Needs a streaming call in `core/llm.py` and a small change in `core/server.py`.
+- Cancellation: when a client disconnects, the graph stops at the next step. Needed before interrupts.
+- Worker output text in worker events.
 
 Done when: a real model answers a request from the laptop through the tunnel, with live tokens.
 
@@ -139,3 +144,5 @@ Done when: a real model answers a request from the laptop through the tunnel, wi
 | 2026-11-13 | Disconnect during a turn is quiet, not an error | Avoids a traceback on Ctrl+C. |
 | 2026-11-13 | Snapshot is `git archive HEAD` | Only committed work reaches the next session. |
 | 2026-11-13 | Phase D tunnel is `cloudflared` quick tunnel | No account needed. Simple for a beginner. |
+| 2026-11-13 | All work stays on `phase-b-cli` until Phase E | One branch to track. Pull request to `master` at the end. |
+| 2026-11-13 | Worker output text added in Phase D, with streaming | UI changes happen once. |
