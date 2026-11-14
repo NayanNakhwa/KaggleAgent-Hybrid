@@ -8,5 +8,6 @@ fastapi>=0.115
 uvicorn>=0.30
 websockets>=13
 rich>=13
+streamlit==1.67.0
 ruff>=0.5
 pytest>=8
