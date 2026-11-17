@@ -1,12 +1,16 @@
 # Context docs
 
-Start with HANDOFF.md, then NEXT_SESSION.md.
+Start with HANDOFF.md, then NEXT_SESSION.md, then PROJECT_SCOPE.md.
 
 | File | What it is | Read when |
 |---|---|---|
-| HANDOFF.md | Current state, commits, verified checks, gaps, next steps, working rules, session log | Always, first |
-| NEXT_SESSION.md | How to end a session (6 items), start a new one, and the plan | Start and end of every session |
-| PROJECT_SCOPE.md | Goal, architecture, settings, phases, plans for C, D and E | Planning or starting a phase |
-| ARCHITECTURE.md | Protocol and graph details | Changing server or graph code |
-| DECISIONS.md | Older decisions | "Why was this done?" |
-| RUNBOOK.md | Commands to run server and client | Running things |
+| HANDOFF.md | Current state, verified checks, gaps, next steps, session log | Always, first |
+| NEXT_SESSION.md | Part 1: end of a session. Part 2: start of a session. Part 3: the plan. Part 4: how the assistant works. Part 5: common problems. | Start and end of every session |
+| PROJECT_SCOPE.md | Goal, architecture, settings, phases and plans | Planning or starting a phase |
+| ARCHITECTURE.md | Components, WebSocket protocol, Kaggle path | Changing server, client, UI or graph code |
+| DECISIONS.md | Numbered decisions with reasons and status | "Why was this done?" |
+| RUNBOOK.md | Commands for tests, server, CLI, UI, Kaggle cells and git | Running things |
+
+Rules:
+- The source of truth is the committed snapshot plus the raw Get-Content text pasted into the new chat. A summary is not a source.
+- Never write a real token, password or tunnel URL in these files.

@@ -1,6 +1,6 @@
 ﻿# Handoff
 
-Last updated: 2026-11-14 (end of session 4)
+Last updated: 2026-11-17 (end of session 5)
 
 Read this file first. Then read NEXT_SESSION.md (how to work) and PROJECT_SCOPE.md (scope and plan). README.md in this folder is the index.
 
@@ -10,20 +10,27 @@ Read this file first. Then read NEXT_SESSION.md (how to work) and PROJECT_SCOPE.
 - Work branch: `phase-b-cli`. All work stays on this branch until Phase E.
 - Local path: D:\Projects\Kaggle Projects\Projects\KaggleAgent-Hybrid
 - Python 3.11.13 in `.venv`. Activate with `.\.venv\Scripts\Activate.ps1`.
-- Phase B is complete and pushed (`0c8a132` was the last pushed commit at the start of session 4).
-- Phase C (Streamlit UI) is built and was tested by the user in fake mode on 2026-11-14. Files: `ui/__init__.py`, `ui/app.py`, `tests/test_ui.py`. `requirements.txt` pins `streamlit==1.67.0`.
-- The end-of-session-4 commit and push contain the Phase C code and these docs. The new session must confirm this with `git --no-pager log --oneline -3` and `git status -sb` (NEXT_SESSION.md, Step 2.4). If the push did not happen, say so and do not assume it did.
-- The snapshot from the end of session 4 is the one to upload. Older snapshots (for example `8b81a2d`) are outdated.
-- Kaggle: the user has a Kaggle account and phone verification is done (2026-11-14). No notebook has been created yet.
+- Phase B: complete.
+- Phase C (Streamlit UI): complete. Tested in a browser in fake mode on 2026-11-14.
+- Phase D (Kaggle, Ollama, tunnel): in progress.
+  - D.1 Kaggle notebook: done. Private, GPU T4 x2, Internet On.
+  - D.2 Notebook cells 1 to 3: done. Clean versions are in RUNBOOK.md.
+  - D.3 Laptop handshake: done. `scripts/check_ollama.py` printed OK through the tunnel.
+  - D.4 Worker failure with the real model: next. The answer came back, but both worker rounds failed.
+- Phase E: not started.
+- Last commit before session 5: `21e145f`. Session 5 adds a docs commit on top, and optionally a script commit. Find the hashes with `git --no-pager log --oneline -3`. The hashes are not written here.
+- `scripts/check_ollama.py` is tested by the user (D.3) but may not be committed yet. NEXT_SESSION.md, Part 1, Step 1.4 covers it.
+- Snapshot to upload: the one made after the last push of session 5 (NEXT_SESSION.md, Part 1, Step 1.5).
 
-Recent commits (newest first, check with `git log`):
+Recent commits (newest first; check with `git --no-pager log`):
 
 | Commit | Where | What |
 |---|---|---|
-| Session 4 commits (2) | origin after push | Phase C Streamlit UI and tests; these docs |
-| 0c8a132 | origin | Docs: handoff, next-session guide, project scope (session 3) |
-| 77c3a06 | origin | Docs only: handoff, next-session guide, project scope, docs index |
-| ea2db92 | origin | Fix WebSocket disconnect handling (code change in `core/server.py`) |
+| Session 5 commits (1 or 2) | origin after push | Docs rebuilt. Optional: `scripts/check_ollama.py` |
+| 21e145f | origin | Phase C Streamlit UI and tests, Streamlit pinned 1.67.0, session 4 docs. NEXT_SESSION.md was truncated to 35 lines. |
+| 0c8a132 | origin | Session 3 docs with the full 254-line NEXT_SESSION.md |
+| 77c3a06 | origin | Docs only |
+| ea2db92 | origin | Fix WebSocket disconnect handling (`core/server.py`) |
 | 42d544c | origin | Docs only |
 | 8b81a2d | origin | Docs only |
 | 8e19112 | origin | Test delay (`KAGENT_FAKE_DELAY`) and docs |
@@ -35,83 +42,74 @@ Recent commits (newest first, check with `git log`):
 
 | Check | Result | Date | Code checked |
 |---|---|---|---|
-| `ruff check .` | All checks passed | 2026-11-13 | `ea2db92` |
-| `pytest -v` | 37 passed, 2 skipped (Linux-only bash tests, expected on Windows) | 2026-11-13 | `ea2db92` |
-| Fake-mode server starts on 127.0.0.1:8000 | Yes | 2026-11-13 | `ea2db92` |
-| Wrong token (CLI) | Prints "auth failed" once. Token is not shown. | 2026-11-13 | `ea2db92` |
-| Chat in fake mode (CLI) | Plan, worker, judge and answer panels render | 2026-11-13 | pre-fix code |
-| Ctrl+C during a chat turn | Client prints "interrupted..." and server log shows no traceback | 2026-11-13 | `ea2db92` |
-| `python -m pip install streamlit` | Installed Streamlit 1.67.0 | 2026-11-14 | Phase C working tree |
-| `ruff check .` after Phase C | All checks passed | 2026-11-14 | Phase C working tree |
-| `pytest -v` after Phase C | 45 passed, 2 skipped (37 old + 8 new UI tests) | 2026-11-14 | Phase C working tree |
-| UI on port 8501 with correct token, fake mode | Browser showed plan table, worker ok, judge accepted, and the answer | 2026-11-14 | Phase C working tree |
-| UI on port 8502 with wrong token | Browser showed red error "auth failed". Token not shown. | 2026-11-14 | Phase C working tree |
+| `ruff check .` | All checks passed | 2026-11-14 | Phase C |
+| `pytest -v` | 45 passed, 2 skipped (2 skips are Linux-only bash tests) | 2026-11-14 | Phase C |
+| Browser UI on 8501, correct token, fake mode | Plan, worker, judge and answer shown | 2026-11-14 | Phase C |
+| Browser UI on 8502, wrong token | Red "auth failed" error. Token not shown. | 2026-11-14 | Phase C |
+| Kaggle notebook `kagent-ollama` | Exists, private, GPU T4 x2, Internet On | 2026-11-17 | Kaggle (not in repo) |
+| Kaggle cell 1 (zstd, Ollama, cloudflared) | `OK` lines and `Install done` | 2026-11-17 | Kaggle (not in repo) |
+| Kaggle cell 2 (serve, pull model) | `qwen2.5-coder:7b` pulled, local `/api/tags` answered | 2026-11-17 | Kaggle (not in repo) |
+| Kaggle cell 3 (tunnel with host header fix) | `Notebook test: OK` | 2026-11-17 | Kaggle (not in repo) |
+| PowerShell `Invoke-RestMethod` through the tunnel | Returned `qwen2.5-coder:7b` | 2026-11-17 | Kaggle (not in repo) |
+| `python scripts\check_ollama.py` with `OLLAMA_HOST` set | `OK: Ollama is reachable and has qwen2.5-coder:7b.` | 2026-11-17 | `scripts/check_ollama.py` |
+| Server with `KAGENT_LLM=ollama` (window 1) | Started. WebSocket connection accepted. | 2026-11-17 | Phase B server |
+| CLI, request "write a python function that adds two numbers" | Plan shown (1 subtask, role `coder`). Workers `r1-0` and `r2-0` failed. Judge rejected both. Answer shown. | 2026-11-17 | Phase B and D code |
+
+Not verified: why the workers failed, the Kaggle log for the chat requests (cell 4 not yet run), `ruff` and `pytest` after the new script, the UI with the real model, and streaming.
 
 ## 3. Untested or not built
 
-- Live token streaming: not built (Phase D).
-- Cancellation: not built. The graph thread runs to the end of the turn after a client disconnects (Phase D).
-- Ollama mode (`KAGENT_LLM=ollama`): untested on the laptop.
-- Streamlit UI with a real model: untested (needs Phase D).
-- Streamlit UI cancel button: not built (Phase D, with cancellation).
-- Kaggle notebook, tunnel and handshake: not started (Phase D).
-- Persist: returns a stub (`persist_pending`) until Phase E.
+- Worker failure with the real model: cause not known (step D.4).
+- Live token streaming: not built in the server (step D.5). `OllamaEngine.stream()` exists in `core/llm.py`.
+- Worker output text in worker events: not built (step D.5).
+- Cancellation on client disconnect: not built (step D.5).
+- Streamlit UI with the real model: untested (step D.6).
+- Handshake check runs only when you run it by hand. The server does not call it.
+- Persist returns a stub (`persist_pending`) until Phase E.
 - Client-to-server interrupt message: not implemented.
 
 ## 4. Known gaps
 
-1. Answer is sent in 40-character chunks after the answer is complete, not as live tokens. Fixed in Phase D.
-2. Worker events do not include the worker's output text, so the CLI and UI cannot show it. Planned for Phase D, together with streaming.
-3. The graph thread runs to the end after a disconnect. Phase D adds a cancel signal that the graph checks between steps.
-4. Persist is a stub. Phase E.
-5. The Streamlit page keeps chat history only in the browser session. A page reload clears it.
-6. Each Streamlit request opens its own WebSocket connection. This is simple, but Phase D may change it when streaming arrives.
+1. Workers fail with the real model. The planner returned role `coder`. Fake mode uses role `executor`. This is a suspect, not a confirmed cause. Check the role check in `core/workers.py` (step D.4).
+2. The judge rejected both rounds, yet the answer was still returned. Check whether this is intended (step D.4).
+3. The answer is sent in 40-character chunks after it is complete, not as live tokens (step D.5).
+4. Worker events do not include output text (step D.5).
+5. The graph runs to the end after a disconnect (step D.5).
+6. Ollama has no login. Anyone with the tunnel URL can use the GPU while the tunnel runs. Protection now: the notebook is private, the URL is random and changes on every run, and you stop the notebook when done. Step D.7 adds a token check in front of Ollama.
+7. Each cell 3 run creates a new tunnel URL. Old URLs stop working. Do not reuse them, and do not paste them anywhere.
+8. The Kaggle session ends after a while, and the tunnel stops with it. Kaggle limits GPU time, so stop the session when you finish.
+9. Persist is a stub (Phase E).
+10. The Streamlit page loses its chat history on reload.
+11. Each Streamlit request opens its own WebSocket connection. Phase D may change this.
 
 ## 5. Next steps
 
 Follow NEXT_SESSION.md, Part 3, in this order:
-1. Phase C: done (2026-11-14). Commit and push are the last session 4 step.
-2. Phase D: Kaggle notebook with Ollama, cloudflared tunnel, handshake check, live tokens, cancellation. Start with step D.1 (Kaggle settings, browser).
-3. Phase E: persist generated skills to a branch, README, docs, pull request into `master`.
+1. D.4: worker failure with the real model.
+2. D.5: live tokens, worker output text, cancellation.
+3. D.6: end-to-end test in the CLI and the UI with the real model.
+4. D.7: close Phase D (token check in front of Ollama).
+5. Phase E: persist, README, docs, pull request into `master`.
 
 ## 6. Decisions
 
-- Test delay is opt-in with `KAGENT_FAKE_DELAY` (default 0). Used for manual Ctrl+C tests only.
-- A client disconnect during a turn is handled quietly in `_chat`. It is not logged as an error.
-- All work stays on `phase-b-cli` until Phase E. Nothing goes to `master` before the pull request.
-- Snapshots are made with `git archive HEAD` after the push. Only committed work reaches the next session.
-- The user confirms every push, delete, merge and amend. The user asked for commit and push at the end of each session, so those commands are part of the end-of-session steps.
-- Only the fake local token `local-dev-test` (fake mode, localhost only) appears in the docs. Real tokens go only in Kaggle Secrets and the laptop environment.
-- Phase C is built on `phase-b-cli` without a new branch.
-- Phase C UI reuses `client/protocol.py` and reads `KAGENT_TOKEN` only from the environment. The page has no token field.
-- Streamlit is pinned to the version actually installed (1.67.0) before pinning in `requirements.txt`.
-- Streamlit's first-run email prompt is left blank. Telemetry opt-out is the user's choice and was not changed.
-- Phase D uses a `cloudflared` quick tunnel (no account needed).
-- Worker output text is added in Phase D, together with live streaming, so the UI change happens once.
+Full list in DECISIONS.md. The ones that matter for the next session:
+- All work stays on `phase-b-cli` until Phase E.
+- The laptop reaches Ollama through a `cloudflared` quick tunnel with `--http-host-header localhost:11434`.
+- The real token lives only in the environment. Real tokens are not used yet, because Ollama has no login.
+- The Kaggle notebook stays private.
+- Commits name their files (`git add docs/context`), not `git add -A`.
 
 ## 7. Session log
 
 | Session | Date | Summary |
 |---|---|---|
 | 1 | 2026-11-12 | Phase B server and Rich CLI in fake mode. Auth text fixed. Ctrl+C handling added. |
-| 2 | 2026-11-13 | Manual auth and Ctrl+C tests. Added `KAGENT_FAKE_DELAY`. Disconnect fix in the server. Context docs rebuilt. |
-| 3 | 2026-11-13 | Checked git history. Confirmed `ea2db92` is on origin. Ran `ruff` and `pytest` (37 passed, 2 skipped). Phase B marked complete. |
-| 4 | 2026-11-14 | Read docs in raw form (some reads returned summaries; the user's Get-Content paste became the source of truth). Built Phase C: `ui/`, `tests/test_ui.py`, pinned Streamlit 1.67.0. ruff passed, pytest 45 passed and 2 skipped. Browser tests on 8501 and 8502 passed. Commit and push at the end of the session (confirm with git log). Kaggle phone verification done. |
-
-Note for session 5: the snapshot and chat upload may not be read reliably. If the assistant gives summaries instead of raw text, paste the output of the Get-Content block in NEXT_SESSION.md, Part 1, Step 1.6.
+| 2 | 2026-11-13 | Manual auth and Ctrl+C tests. Added `KAGENT_FAKE_DELAY`. Disconnect fix in the server. Docs rebuilt. |
+| 3 | 2026-11-13 | Git history checked. `ea2db92` on origin. ruff and pytest: 37 passed, 2 skipped. Phase B complete. |
+| 4 | 2026-11-14 | Phase C built: `ui/`, `tests/test_ui.py`, Streamlit 1.67.0. pytest 45 passed, 2 skipped. Browser tests passed on 8501 and 8502. Pushed as `21e145f`. The docs commit truncated NEXT_SESSION.md to 35 lines. |
+| 5 | 2026-11-17 | Found the truncated NEXT_SESSION.md and recovered the 254-line version. Built the Kaggle notebook (private). Cells 1 and 2 passed. Cell 3 needed the host header fix. Laptop tunnel test and `check_ollama.py` passed. Server and CLI got a real-model answer, but the workers failed. Full docs rebuilt. |
 
 ## 8. Working rules
 
-- The user is learning to code. Explain each step in plain language: what it does and why.
-- Give full files, not partial snippets. When a file changes, give the whole file.
-- Batch the commands for one step into one PowerShell block. Say which window (current or new), whether `(.venv)` must show, and the folder (repo root).
-- The user asked for fewer round trips. Give all steps of a phase in one reply, then wait for one paste with the output of all of them.
-- Say "untested" until the user shows output. Do not say "verified" before that.
-- Use `git --no-pager` for `log` and `show` so output does not stop at `(END)`.
-- Check `git log` and `git status` output before writing commit instructions. Do not assume what was committed.
-- Never ask for, store, or repeat real tokens or passwords.
-- Ask before any push, delete, merge, or amend. The user's end-of-session request counts as the confirmation for the docs commit and push only.
-- Use branches. Do not commit to `master`.
-- Read docs in raw form. If a tool gives a summary instead of raw text, say so and ask for the Get-Content output. Do not guess file contents.
-- Pick the best option, state it in one line, and proceed.
-- Keep each reply small enough to finish. Do not cut off code.
+The full rules are in NEXT_SESSION.md, Part 4. Short version: explain each step, give full files, batch commands per step, wait for pasted output before saying "verified", never ask for or repeat real tokens or tunnel URLs, and ask before any push, delete, merge or amend.
